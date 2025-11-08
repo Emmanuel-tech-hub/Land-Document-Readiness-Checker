@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Land Document Readiness Checker</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background-color: #f5f8fa;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+    }
+    header {
+      background: #004999;
+      color: white;
+      padding: 20px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    main {
+      margin-top: 30px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      padding: 30px 40px;
+      width: 95%;
+      max-width: 520px;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-top: 15px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-top: 5px;
+      font-size: 15px;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      background-color: #004999;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #003873;
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: 500;
+      text-align: center;
+      color: #333;
+    }
+    .success {
+      color: #008000;
+    }
+    .error {
+      color: #d00;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Land Document Readiness Checker</h1>
+    <p>Upload a document to evaluate its readiness and clarity before submission.</p>
+  </header>
+
+  <main>
+    <form id="uploadForm">
+      <label for="ownerName">Owner Name</label>
+      <input type="text" id="ownerName" name="ownerName" placeholder="John Doe" required />
+
+      <label for="propertyAddress">Property Address</label>
+      <input type="text" id="propertyAddress" name="propertyAddress" placeholder="123 Main Street" required />
+
+      <label for="documentType">Document Type</label>
+      <select id="documentType" name="documentType" required>
+        <option value="">-- Select Type --</option>
+        <option value="Title Deed">Title Deed</option>
+        <option value="Survey Plan">Survey Plan</option>
+        <option value="Purchase Receipt">Purchase Receipt</option>
+      </select>
+
+      <label for="phone">Phone Number (for SMS update)</label>
+      <input type="tel" id="phone" name="phone" placeholder="+233..." required />
+
+      <label for="file">Upload File</label>
+      <input type="file" id="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required />
+
+      <button type="submit">Submit Document</button>
+    </form>
+
+    <div id="status"></div>
+  </main>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const statusDiv = document.getElementById('status');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusDiv.textContent = '⏳ Uploading and processing... please wait.';
+      statusDiv.className = '';
+
+      const formData = new FormData(form);
+
+      try {
+        const response = await fetch('http://localhost:5678/webhook-test/land-doc-upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status) {
+          statusDiv.innerHTML = `
+            ✅ <span class="success">Status: <strong>${result.status}</strong></span><br>
+            Reference ID: <strong>${result.referenceId || 'N/A'}</strong><br>
+            Risk Score: <strong>${result.riskScore || 'N/A'}%</strong>
+          `;
+        } else {
+          statusDiv.innerHTML = '<span class="error">⚠️ Unexpected response received. Check n8n logs.</span>';
+        }
+      } catch (err) {
+        console.error(err);
+        statusDiv.innerHTML = '<span class="error">❌ Could not connect to n8n server. Ensure it is running locally.</span>';
+      }
+    });
+  </script>
+</body>
+</html>
